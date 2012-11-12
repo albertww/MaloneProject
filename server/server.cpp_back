@@ -1,0 +1,132 @@
+#include "common.h"
+
+int main()
+{
+	int ret = 0;
+	do 
+	{
+		/*if (0 == SetMaxOpenFD(DEFAULT_EPOLL_EVENT))
+		{
+			printf("set max fd failed\n");
+			break;
+		}*/
+		int listener = socket(AF_INET, SOCK_STREAM, 0);
+		if (-1 == listener)
+		{
+			printf("listen socket failed\n");
+			break;
+		}
+		SetNonblock(listener);
+		struct sockaddr_in serverAddress;
+		bzero(&serverAddress, sizeof(serverAddress));
+		serverAddress.sin_family = PF_INET;
+		serverAddress.sin_port = htons(SERVER_PORT);
+		serverAddress.sin_addr.s_addr = INADDR_ANY;
+		
+		if (bind(listener, (struct sockaddr*)&serverAddress, 
+			sizeof(struct sockaddr)) == -1)
+		{
+			printf("bind failed\n");
+			break;
+		}
+		char* ptr = getenv("LISTENQ");
+		int listenNum = 5;
+		if (ptr != NULL)
+			listenNum = atoi(ptr);
+		if (listen(listener, listenNum) == -1)
+		{
+			printf("listen failed\n");
+			break;
+		}
+		char buff[1024];
+		socklen_t len = sizeof(struct sockaddr_in);
+		CEpoll myEpoll;
+		if (myEpoll.AddToEpoll(listener, EPOLLIN | EPOLLET))
+		{
+			while (true)
+			{
+				int numOfFD = myEpoll.EpollWait();
+				//sleep(1);
+				printf("numoffd is %d\n", numOfFD);
+				while (myEpoll.HaveNextFD())
+				{
+					//printf("have next fd\n");
+					struct epoll_event ev;
+					myEpoll.GetNextEvent(&ev);
+					struct sockaddr_in clientAddress;
+					// epoll listener
+					if (ev.data.fd == listener)
+					{
+						int newfd = accept(listener, 
+							(struct sockaddr*)&clientAddress, &len);
+						if (newfd < 0)
+						{
+							printf("accept error\n");
+							continue;
+						}
+						else
+						{
+							printf("connect from %s:%d, socket is %d\n",
+								inet_ntoa(clientAddress.sin_addr),
+								ntohs(clientAddress.sin_port), newfd);
+						}
+						if (SetNonblock(newfd))
+						{
+							printf("non-blocking %d\n", newfd);
+						}
+						if (0 == myEpoll.AddToEpoll(newfd, EPOLLIN | EPOLLET))
+						{
+						}
+						else
+						{
+							printf("new add to epoll suc\n");
+						}
+					}
+					// epoll other fd
+					else
+					{
+						while (1)
+						{
+							//printf("socket %d recved data\n", ev.data.fd);
+							int len = read(ev.data.fd, buff, 1024);
+							if (len > 0)
+							{
+								buff[len] = 0;
+								printf("%d: %s\n", len, buff);
+								continue;
+							}
+							else if (len < 0)
+							{
+								if (errno == EAGAIN)
+								{
+									printf("EAGAIN\n");
+									break;
+								}
+								printf("error of read\n");
+							}
+							else if (len == 0)
+							{
+								printf("read end\n");
+							}
+							if (myEpoll.RemoveFromEpoll(ev.data.fd, 
+								EPOLLIN | EPOLLET))
+							{
+								printf("remove from epoll suc\n");
+							}
+							close(ev.data.fd);
+							break;
+						} // end while read
+					} // end process next fd
+				} // end have next fd
+			} // end while
+		} // end add listener fd to epoll
+		// add listener to epoll failed so exit
+		else
+		{
+			break;
+		}
+	}
+	while (0);
+
+	return ret;	
+}

@@ -1,13 +1,27 @@
+#ifndef MALONE_TIME_H_
+#define MALONE_TIME_H_
+
 #include <time.h>
 
-int SecToTimestruct(time_t secs, struct tm *ptm);
+class MaloneTime
+{
+public:
+  static int SecToTimestruct(time_t secs, struct tm *ptm);
 
-int TimestructToString(struct tm sttm, char *timestring);
+  static int TimestructToString(struct tm sttm, char *time_string);
 
-int SecToString(time_t secs, char *timestring);
+  static int SecToString(time_t secs, char *time_string);
 
-int StringToTimestruct(char *timestring, struct tm* ptm);
+  static int StringToTimestruct(char *time_string, struct tm* ptm);
 
-int TimestructToSecs(struct tm sttm, time_t *psecs);
+  static int TimestructToSecs(struct tm sttm, time_t *psecs);
 
-int StringToSecs(char *timestring, time_t *psecs);
+  static int StringToSecs(char *times_tring, time_t *psecs);
+  
+  // compare two string of datetime
+  // @return 1 if t1 > t2, 0 if t1 == t2, -1 if t1 < t2
+  //         -2 if t1 or t2 is invalid
+  static int CompareTime(char *t1, char *t2);
+};
+
+#endif

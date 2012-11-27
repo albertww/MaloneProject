@@ -9,16 +9,17 @@ namespace Malone
 	class CTimerCallbacker
 	{
 	public:
-		void OnTimer(int id, void *param1, void *param2);
+		void OnTimer(int value, void *userdata);
 	};
 	
 	struct SlotElement
 	{
 		int Loop;
 		int Timeout;
-		CTimerCallbacker *CallBackFunc;
-		void *FirstParam;
-		void *SecondParam;
+		CTimerCallbacker *Callee;
+		int Value;
+		void *Userdata;
+		int Timerid;
 	};
 	
 	class CMaloneTimer
@@ -27,7 +28,7 @@ namespace Malone
 		CMaloneTimer();
 		void Start();
 		void ProcTick();
-		int Insert(int timeout, CTimerCallbacker *caller, void *param1, void *param2);
+		int Insert(int timeout, CTimerCallbacker *callee, int value, void *userdata);
 	protected:
 		int m_SlotNum;
 		int m_Current;

@@ -27,15 +27,15 @@ namespace Malone
 		}
 	}
 	
-	int CMaloneTimer::Insert(int timeout, void *callBackFunc, void *param1, void *param2)
+	int CMaloneTimer::Insert(int timeout, CTimerCallbacker *callee, int value, void *userdata)
 	{
 		if (timeout <= 0)
 			return 0;
 		SlotElement se;
 		se.Timeout = timeout;
-		se.CallBackFunc = callBackFunc;
-		se.FirstParam = param1;
-		se.SecondParam = param2;
+		se.Callee = callee;
+		se.Value = value;
+		se.Userdata = userdata;
 		int loop = timeout / m_SlotNum;
 		int nextSlot = (m_Current + timeout) % m_SlotNum;
 		se.Loop = loop;

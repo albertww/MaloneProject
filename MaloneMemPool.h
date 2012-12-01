@@ -15,15 +15,20 @@ int compileroffset = 1;
 int compileroffset = 0;
 #endif
 
+typedef unsigned int uint;
+
+template <class T>
+class PoolList;
+
 template <class T>
 class PoolElement
 {
 public:
-    PoolElement(): m_Next(NULL), m_Prev(NULL)
+    PoolElement(): m_Next(NULL), m_Prev(NULL), m_Boss(NULL)
     {
     }
     
-    void NextTo(PoolElement *next) 
+    void NextTo(PoolElement *next)
     {
         m_Next = next;
     }
@@ -32,12 +37,19 @@ public:
     {
         m_Prev = prev;
     }
+	
+	void SetBoss(PoolList<T> *boss)
+	{
+		m_Boss = boss;
+	}
     
-    PoolElement * Next() { return m_Next; }
+    PoolElement *Next() { return m_Next; }
     
-    PoolElement * Prev() { return m_Prev; }
+    PoolElement *Prev() { return m_Prev; }
+	
+	PoolList<T> *GetBoss() { return m_Boss; }
     
-    T * GetObject()
+    T *GetObject()
     {
         return &m_Obj;
     }
@@ -53,9 +65,11 @@ public:
         size_t offset = (size_t)((char *)&this->m_Obj - (char *)this);
         return offset;
     }
-
+	
+protected:
     PoolElement *m_Next;
     PoolElement *m_Prev;
+	PoolList<T> *m_Boss;
     T m_Obj;
 };
 
@@ -102,6 +116,7 @@ public:
 			m_Last = element;
 			m_Last->NextTo(NULL);
 		}
+		element->SetBoss(this);
 		++m_Count;
 	}
 	
@@ -123,6 +138,7 @@ public:
 			m_First = element;
 			m_First->PrevTo(NULL);
 		}
+		element->SetBoss(this);
 		++m_Count;
 	}
 	
@@ -148,6 +164,7 @@ public:
 		
 		ret->NextTo(NULL);
 		ret->PrevTo(NULL);
+		ret->SetBoss(NULL);
 		return ret;
 	}
 	
@@ -173,10 +190,37 @@ public:
 		
 		ret->NextTo(NULL);
 		ret->PrevTo(NULL);
+		ret->SetBoss(NULL);
 		return ret;
 	}
 	
-	PoolElement<T> * RemoveFromList(PoolElement<T> *element)
+	PoolElement<T> *QuickRemoveElement(PoolElement<T> *element)
+	{
+		if (NULL == element || this != element->GetBoss())
+			return NULL;
+		
+		if (m_First == element)
+		{
+			return Popfront();
+		}
+		
+		if (m_Last == element)
+		{
+			return Popback();
+		}
+		
+		PoolElement<T> *prev = element->Prev();
+		PoolElement<T> *next = element->Next();
+		prev->NextTo(next);
+		next->PrevTo(prev);
+		element->NextTo(NULL);
+		element->PrevTo(NULL);
+		element->SetBoss(NULL);
+		--m_Count;
+		return element;
+	}
+	
+	PoolElement<T> *RemoveFromList(PoolElement<T> *element)
 	{
 		if (element == NULL)
 			return NULL;
@@ -192,11 +236,12 @@ public:
 		next->PrevTo(prev);
 		element->NextTo(NULL);
 		element->PrevTo(NULL);
+		element->SetBoss(NULL);
 		--m_Count;
 		return element;
 	}
 	
-	PoolElement<T> * RemoveFromList(int index)
+	PoolElement<T> *RemoveFromList(int index)
 	{
 		PoolElement<T> *element = GetElementByIndex(index);
 		return RemoveFromList(element);
@@ -276,20 +321,21 @@ public:
 		return m_Last;
     }  
 	
+protected:
 	PoolElement<T> *m_First;
 	PoolElement<T> *m_Last;
-	int m_Count;
+	uint m_Count;
 };
 
 template <class T>
-class CMaloneMemPool
+class MaloneMemPool
 {
 public:
-    CMaloneMemPool(int maxsize): m_Pool(NULL), m_Maxsize(maxsize)
+    MaloneMemPool(uint maxsize): m_Pool(NULL), m_Maxsize(maxsize)
     {
         if (maxsize <= 0)
         {
-            printf("CMaloneMemPool size <= 0\n");
+            printf("MaloneMemPool size <= 0\n");
             //exit(1);
         }
         m_Pool = new PoolElement<T>[m_Maxsize];
@@ -299,14 +345,14 @@ public:
             //exit(1);
         }
         
-        for (int i = 0; i < m_Maxsize; ++i)
+        for (uint i = 0; i < m_Maxsize; ++i)
         {
             m_Free.Pushback(&m_Pool[i]);
         }
 
     }
     
-    ~CMaloneMemPool() { delete [] m_Pool; }
+    ~MaloneMemPool() { delete [] m_Pool; }
 	
     T * Allocate() 
     { 
@@ -323,23 +369,33 @@ public:
 		return NULL;
     }
 	
-    void Release(T *rel) 
+    int Release(T *rel) 
     {
 		PoolElement<T> *element = GetContainerElement(rel);
 		if (NULL != element)
 		{
+			if (NULL != m_Used.QuickRemoveElement(element))
+			//if (NULL != m_Used.RemoveFromList(element))
+			{
+				m_Free.Pushback(element);
+                return 1;
+			} 
+#if 0
 			if (m_Used.IsInList(element))
 			{
 				m_Used.RemoveFromList(element);
 				m_Free.Pushback(element);
+                return 1;
 			}
+#endif
 		}
+        return 0;
     }
 
     static void Test()
     {
 		const int size = 5;
-        CMaloneMemPool<T> pool(size);
+        MaloneMemPool<T> pool(size);
         int i = 0;
         T *array[size];
 		for (i = 0; i < size; i++)
@@ -430,13 +486,19 @@ protected:
 		
 		return &m_Pool[index];
 	}
-	        
+
+public:	        
     PoolElement<T> * GetPoolArray() { return m_Pool; }
 	PoolList<T> * GetUsedList() { return &m_Used; }
 	PoolList<T> * GetFreeList() { return &m_Free; }
+
+    uint NumberUsed() { return m_Used.GetCount(); }
+    //uint NumberFree() { return (m_Maxsize - m_Used.GetCount()); }
+    uint NumberFree() { return m_Free.GetCount(); }
+	uint GetMaxsize () { return m_Maxsize; }
     
 protected:
-    int m_Maxsize;
+    uint m_Maxsize;
 	// pool is array, you can access it by index
     PoolElement<T> *m_Pool;
 	// used and free are organized as list, you should only
@@ -446,15 +508,203 @@ protected:
     //void *m_Buffer;
     
 };
+#define CHUNK 10
 
+template <class T>
+class CAutoMemPool
+{
+public:
+	CAutoMemPool(uint size): m_Size(size), m_LastUsed(0)
+	{
+		memset(m_Array, 0, sizeof(m_Array));
+	}
+
+    ~CAutoMemPool()
+    {
+        for (uint i = 0; i < CHUNK; ++i)
+        {
+            if (NULL != m_Array[i])
+                delete m_Array[i];
+        }
+    }
+
+	T *Allocate()
+	{
+		for (int i = 0; i < CHUNK; ++i)
+		{
+			if (NULL == m_Array[i])
+				m_Array[i] = new MaloneMemPool<T>(m_Size);
+			if (NULL == m_Array[i])
+				return NULL;
+			T *data = m_Array[i]->Allocate();
+			if (NULL != data)
+			{
+				m_LastUsed = max(m_LastUsed, i);
+				return data;
+			}
+		}
+
+		return NULL;
+	}
+
+    void Release(T *rel)
+    {
+        for (uint i = 0; i <= m_LastUsed; ++i)   
+        {
+            if (NULL == m_Array[i])
+                return;
+            if (m_Array[i]->Release(rel))
+                return;
+            continue;
+        }
+#if 0 
+        for (uint i = 0; i < CHUNK; ++i)   
+        {
+            if (NULL == m_Array[i])
+                continue;
+            if (m_Array[i]->Release(rel))
+                return;
+            continue;
+        }
+#endif
+    }
+
+	// only release the last not used 
+	int Shrink()
+	{
+		int effect = 0;
+		for (int i = m_LastUsed; i > -1; --i)
+		{
+            //printf("shrink last %d\n", m_LastUsed);
+			if (NULL == m_Array[i])
+			{
+				--m_LastUsed;
+				if (m_LastUsed < 0)
+					m_LastUsed = 0;
+				continue;
+			}
+			if (m_Array[i]->GetMaxsize() == m_Array[i]->NumberFree() && 
+				m_LastUsed == i)
+			{
+				delete m_Array[i];
+				m_Array[i] = NULL;
+				--m_LastUsed;
+				if (m_LastUsed < 0)
+					m_LastUsed = 0;
+				++effect;
+			}
+			else
+			{
+				break;
+			}
+		}
+		return effect;
 #if 0
+		int effect = 0;
+		for (uint i = 0; i < CHUNK; ++i)    
+        {   
+			if (NULL == m_Array[i])
+				continue;
+			if (m_Array[i]->GetMaxsize() == m_Array[i]->NumberFree())
+			{
+				delete m_Array[i];
+				m_Array[i] = NULL;
+				++effect;
+			}
+            continue;
+        }	
+		return effect;
+#endif
+	}	
+
+	uint SpaceFree()
+	{
+		uint total = 0;
+		for (uint i = 0; i < CHUNK; ++i)
+		{
+			if (NULL != m_Array[i])
+			{
+				total += m_Array[i]->NumberFree();
+			}
+		}
+		return total;
+	}
+
+	uint SpaceUsed()
+	{
+		uint total = 0;
+		for (uint i = 0; i < CHUNK; ++i)
+		{
+			if (NULL != m_Array[i])
+			{
+				total += m_Array[i]->NumberUsed();
+			}
+		}
+		return total;
+	}
+	
+	uint SpaceMax()
+	{
+		return m_Size * CHUNK;
+	}
+
+protected:
+	MaloneMemPool<T> *m_Array[CHUNK];
+	uint m_Size;
+	int m_LastUsed;
+};
+
+void Doit()
+{
+    const int LEN = 10000000;
+    int** pi = new int*[LEN];
+    memset(pi, 0, sizeof(pi));
+    CAutoMemPool<int> pool(LEN / 10);
+    for (int i = 0; i < LEN; ++i)
+    {
+        pi[i] = pool.Allocate();
+        if (pi[i] == NULL)
+            printf("NULL\n");
+    }
+    printf("%d, %d\n", pool.SpaceFree(), pool.SpaceUsed());
+    //getchar();
+    /*for (int i = LEN - 5000; i >= 0; --i)
+    {
+        pool.Release(pi[i]);
+    }
+    if (pool.Shrink())
+        printf("shrink ok\n");
+    printf("%d, %d\n", pool.SpaceFree(), pool.SpaceUsed());
+
+
+    for (int i = LEN - 1; i >= 8000; --i)
+    {
+        pool.Release(pi[i]);
+    }
+    if (pool.Shrink())
+        printf("shrink ok\n");
+    printf("%d, %d\n", pool.SpaceFree(), pool.SpaceUsed());
+*/
+    for (int i = LEN - 1; i >= 0; --i)
+        pool.Release(pi[i]);
+    if (pool.Shrink())
+        printf("shrink ok\n");
+    printf("%d, %d\n", pool.SpaceFree(), pool.SpaceUsed());
+	delete [] pi;
+}
+
+#if 1 
 int main()
 {
+    Doit();
+    //getchar();
+#if 1 
     cout << "compileroffset " << compileroffset << endl;
     PoolElement<int> pi;
     printf("offset %i\n", PoolElement<int>::ObjectOffest());
     printf("offset %i\n", pi.ObjectOffest2());
-    CMaloneMemPool<int>::Test();
+    MaloneMemPool<int>::Test();
+#endif
     return 0;
 }
 #endif

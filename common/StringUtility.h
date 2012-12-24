@@ -40,6 +40,8 @@ int StrJoin(char *dst, char sep, vector<string> &vec);
 
 string WStringToString(const wstring& wstr);
 wstring StringToWString(const string& str);
+string WStringToUTF8(const wstring& wstr);
+wstring UTF8ToWString(const string& str);
 
 string WChar2Ansi(wstring szWideStr);
 wstring Ansi2WChar(string szAscStr);

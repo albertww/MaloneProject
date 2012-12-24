@@ -159,7 +159,6 @@ int StrJoin(char *dst, char sep, vector<string> &vec)
 string WStringToString(const wstring& wstr)
 {
 	string result;
-
 	const wchar_t* pwc = wstr.c_str();
 	int wlen = wcslen(pwc);
 	int buffLen = wlen * 2 + 1;
@@ -169,20 +168,18 @@ string WStringToString(const wstring& wstr)
 	WideCharToMultiByte(CP_ACP, 0, pwc, wlen, pc, buffLen, NULL, NULL);
 #else
 	//wcstombs(
-	string oldLocale = setlocale(LC_CTYPE, "zh_SG.gbk");
+	string oldLocale = setlocale(LC_CTYPE, "zh_CN.gbk");
 	wcstombs(pc, pwc, buffLen);
 	setlocale(LC_ALL, oldLocale.c_str());
 #endif
 	result = pc;
 	delete [] pc;
-
 	return result;
 }
 
 wstring StringToWString(const string& str)
 {
 	wstring result;
-
 	const char* pc = str.c_str();
 	int len = strlen(pc);
 	int buffLen = len + 1;
@@ -192,20 +189,62 @@ wstring StringToWString(const string& str)
 	MultiByteToWideChar(CP_ACP, 0, pc, len, pwc, buffLen);
 #else
 	//mbstowcs(pwc, pc, len * 2);
-	string oldLocale = setlocale(LC_CTYPE, "zh_SG.gbk");
+	string oldLocale = setlocale(LC_CTYPE, "zh_CN.gbk");
 	mbstowcs(pwc, pc, buffLen);
 	setlocale(LC_ALL, oldLocale.c_str());
 #endif
-
 	result = pwc;
 	delete [] pwc;
+	return result;
+}
 
+string WStringToUTF8(const wstring& wstr)
+{
+	string result;
+	const wchar_t* pwc = wstr.c_str();
+	int wlen = wcslen(pwc);
+	// length of chinese charactor in utf-8 is 3 bytes in average
+	// some times 4 bytes is needed
+	int buffLen = wlen * 4 + 1;
+	char* pc = new char[buffLen];
+	memset(pc, 0, buffLen);
+#ifdef _WIN32
+	WideCharToMultiByte(CP_UTF8, 0, pwc, wlen, pc, buffLen, NULL, NULL);
+#else
+	//wcstombs(
+	string oldLocale = setlocale(LC_CTYPE, "zh_CN.utf8");
+	wcstombs(pc, pwc, buffLen);
+	setlocale(LC_ALL, oldLocale.c_str());
+#endif
+	result = pc;
+	delete [] pc;
+	return result;
+}
+
+wstring UTF8ToWString(const string& str)
+{
+	wstring result;
+	const char* pc = str.c_str();
+	int len = strlen(pc);
+	int buffLen = len + 1;
+	wchar_t* pwc = new wchar_t[buffLen];
+	wmemset(pwc, 0, buffLen);
+#ifdef _WIN32
+	MultiByteToWideChar(CP_ACP, 0, pc, len, pwc, buffLen);
+#else
+	//mbstowcs(pwc, pc, len * 2);
+	string oldLocale = setlocale(LC_CTYPE, "zh_CN.utf8");
+	mbstowcs(pwc, pc, buffLen);
+	setlocale(LC_ALL, oldLocale.c_str());
+#endif
+	result = pwc;
+	delete [] pwc;
 	return result;
 }
 
 string WChar2Ansi(wstring szWideStr)
 {
-    std::string curLocale = setlocale(LC_CTYPE,"zh_SG.gbk");
+    std::string curLocale = setlocale(LC_CTYPE,"zh_CH.gbk");
 	//    setlocale(LC_ALL, "chs");
     const wchar_t* pSrc = szWideStr.c_str();
     size_t szDest = 2 * szWideStr.size() + 1;
@@ -221,7 +260,7 @@ string WChar2Ansi(wstring szWideStr)
 
 wstring Ansi2WChar(string szAscStr)
 {
-    std::string curLocale = setlocale(LC_CTYPE,"zh_SG.gbk");
+    std::string curLocale = setlocale(LC_CTYPE,"zh_CH.gbk");
 	std::wstring result=L"";
 	const char* pSrc = szAscStr.c_str();
 	size_t szDest = szAscStr.size() + 1;

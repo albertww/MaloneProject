@@ -11,7 +11,7 @@ public:
 	MaloneThread();
 	MaloneThread(char *name);
 	
-	virtual void * Run() {}
+	virtual void * Run() = 0;
 	void Start();
 	static void * ThreadFunc(void *param);
 	

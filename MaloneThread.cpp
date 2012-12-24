@@ -22,6 +22,7 @@ void * MaloneThread::ThreadFunc(void *param)
 {
 	if (*m_Name)
 	{
+		// set the name of this thread
 		prctl(PR_SET_NAME, (unsigned long)m_Name);
 	}
 	MaloneThread *pt = (MaloneThread *)param;

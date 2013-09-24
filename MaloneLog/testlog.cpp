@@ -12,26 +12,7 @@ public:
 int main()
 {
 	base b;
-	/*
-	MALONE_LOG(logger, DEBUG, "%s %i", "afdasfasdfdsafdsdsafdsafdsa", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_LOG(logger, DEBUG, "%s %i", "yaya", 6);
-	MALONE_DEBUG_LOGS(logger, "hahaha" << "I have a gold elephant" << 1)
-	MALONE_DEBUG_LOGS(logger, "hahaha" << "I have a gold elephant" << 2)
-	MALONE_DEBUG_LOGS(logger, "hahaha" << "I have a gold elephant" << 3)
-	MALONE_DEBUG_LOGS(logger, "hahaha" << "I have a gold elephant" << 4)
-	MALONE_DEBUG_LOGS(logger, "hahaha" << "I have a gold elephant" << 5)
-	MALONE_DEBUG_LOGS(logger, "hahaha" << "I have a gold elephant" << 6)*/
+	
 	LOG_DEBUG("%s %i", "afdasfasdfdsafdsdsafdsafdsa", 1);
 	LOG_DEBUG("%s %i", "afdasfasdfdsafdsdsafdsafdsa", 2);
 	LOG_DEBUG("%s %i", "afdasfasdfdsafdsdsafdsafdsa", 3);

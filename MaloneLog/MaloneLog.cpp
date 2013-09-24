@@ -85,7 +85,7 @@ int CMaloneLog::LogMessage(int level, const char *file, int line,
 		
 		if (m_Logfd[level] < 0)
 		{
-		#ifndef _WINDOWS
+		#if defined(_LINUX)
 			m_Logfd[level] = open(m_LogFileName[level].c_str(), 
 				O_RDWR | O_CREAT | O_APPEND | O_LARGEFILE, 0640);
 		#else
@@ -181,7 +181,7 @@ int CMaloneLog::LogMessageStream(int level, const char *file, int line,
 		
 		if (m_Logfd[level] < 0)
 		{
-		#ifndef _WINDOWS
+		#if defined(_LINUX)
 			m_Logfd[level] = open(m_LogFileName[level].c_str(), 
 				O_RDWR | O_CREAT | O_APPEND | O_LARGEFILE, 0640);
 		#else

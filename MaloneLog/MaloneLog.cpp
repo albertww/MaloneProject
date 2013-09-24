@@ -1,4 +1,37 @@
 #include "MaloneLog.h"
+#ifdef _WINDOWS
+#include <direct.h>
+#endif
+#include "timeconvert.h"
+#include <memory.h>
+#include <errno.h>
+
+#define CACHE_SIZE 1000
+
+int FileExist(const char *filename)
+{
+  if (0 == access(filename, F_OK))
+    return 1;
+  return 0;
+}
+
+int GetFileLen(const char *filename, off_t *len)
+{
+  struct stat buf;
+  if (stat(filename, &buf) < 0) 
+  {
+	return 0;
+  }
+  *len = buf.st_size;
+  return 1;
+}
+
+int Rename(const char *oldname, const char *newname)
+{
+  if (0 == rename(oldname, newname))
+    return 1;
+  return 0;
+}
 
 const char *CMaloneLog::s_LogStr[] = {"ERROR", "WARN", "DEBUG" };
 
@@ -13,7 +46,11 @@ CMaloneLog::CMaloneLog(const char *moduleName)
 	m_CurrentDirectory += "/log";
 	if (access(m_CurrentDirectory.c_str(), F_OK) < 0)
 	{
+	#ifndef _WINDOWS
 		mkdir(m_CurrentDirectory.c_str(), 0775);
+	#else
+		mkdir(m_CurrentDirectory.c_str());
+	#endif
 	}
 	SetModuleName(moduleName);
 	//pthread_mutex_init(&m_LogMutex);
@@ -37,8 +74,13 @@ int CMaloneLog::LogMessage(int level, const char *file, int line,
 		
 		if (m_Logfd[level] < 0)
 		{
+		#ifndef _WINDOWS
 			m_Logfd[level] = open(m_LogFileName[level].c_str(), 
 				O_RDWR | O_CREAT | O_APPEND | O_LARGEFILE, 0640);
+		#else
+			m_Logfd[level] = open(m_LogFileName[level].c_str(), 
+				O_RDWR | O_CREAT | O_APPEND, 0640);
+		#endif
 			if (m_Logfd[level] == -1)
 			{
 				retval = -1;
@@ -50,7 +92,13 @@ int CMaloneLog::LogMessage(int level, const char *file, int line,
 		struct timezone tz;
 		gettimeofday(&tv, &tz);
 		struct tm sttm;
+		#ifndef _WINDOWS
 		::localtime_r((const time_t *)&tv.tv_sec, &sttm);
+		#else
+		struct tm *ptm;
+		ptm = localtime((const time_t *)&tv.tv_sec);
+		sttm = *ptm;
+		#endif
 		
 		char message[4096];
 		char buffer[5120];
@@ -85,6 +133,26 @@ int CMaloneLog::LogMessage(int level, const char *file, int line,
 		}
     } while(0);
 	
+	if (FileExist(m_LogFileName[level].c_str()))
+  	{
+		printf("log file is %s\n", m_LogFileName[level].c_str());
+		off_t filelen;
+		GetFileLen(m_LogFileName[level].c_str(), &filelen);
+		if (filelen > CACHE_SIZE)
+		{
+			close(m_Logfd[level]);
+			m_Logfd[level] = -1;
+			char newname[256];
+			memset(newname, 0, sizeof(newname));
+			char timestr[32];
+			time_t now = time(NULL);
+			MaloneTime::SecToCompactString(now, timestr);
+			sprintf(newname, "%s.%s", m_LogFileName[level].c_str(), timestr);
+			int suc = Rename(m_LogFileName[level].c_str(), newname);
+			printf("len > 1000 rename from %s to %s result is %d errno is %d\n", m_LogFileName[level].c_str(), newname, suc, errno);
+		}
+	}
+	
 	return retval;
 }
 
@@ -102,8 +170,13 @@ int CMaloneLog::LogMessageStream(int level, const char *file, int line,
 		
 		if (m_Logfd[level] < 0)
 		{
+		#ifndef _WINDOWS
 			m_Logfd[level] = open(m_LogFileName[level].c_str(), 
 				O_RDWR | O_CREAT | O_APPEND | O_LARGEFILE, 0640);
+		#else
+			m_Logfd[level] = open(m_LogFileName[level].c_str(), 
+				O_RDWR | O_CREAT | O_APPEND, 0640);
+		#endif
 			if (m_Logfd[level] == -1)
 			{
 				retval = -1;
@@ -115,7 +188,13 @@ int CMaloneLog::LogMessageStream(int level, const char *file, int line,
 		struct timezone tz;
 		gettimeofday(&tv, &tz);
 		struct tm sttm;
+		#ifndef _WINDOWS
 		::localtime_r((const time_t *)&tv.tv_sec, &sttm);
+		#else
+		struct tm *ptm;
+		ptm = localtime((const time_t *)&tv.tv_sec);
+		sttm = *ptm;
+		#endif
 		
 		char buffer[5120];
 		
@@ -143,6 +222,26 @@ int CMaloneLog::LogMessageStream(int level, const char *file, int line,
 			}
 		}
     } while(0);
+	
+	if (FileExist(m_LogFileName[level].c_str()))
+  	{
+		printf("log file is %s\n", m_LogFileName[level].c_str());
+		off_t filelen;
+		GetFileLen(m_LogFileName[level].c_str(), &filelen);
+		if (filelen > CACHE_SIZE)
+		{
+			close(m_Logfd[level]);
+			m_Logfd[level] = -1;
+			char newname[256];
+			memset(newname, 0, sizeof(newname));
+			char timestr[32];
+			time_t now = time(NULL);
+			MaloneTime::SecToCompactString(now, timestr);
+			sprintf(newname, "%s.%s", m_LogFileName[level].c_str(), timestr);
+			int suc = Rename(m_LogFileName[level].c_str(), newname);
+			printf("len > 1000 rename from %s to %s result is %d errno is %d\n", m_LogFileName[level].c_str(), newname, suc, errno);
+		}
+	}
 	
 	return retval;
 }

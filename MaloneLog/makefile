@@ -1,12 +1,13 @@
 
 ELFNAME=testlog
-OBJ=MaloneLog.o testlog.o
+OBJ=timeconvert.o MaloneLog.o testlog.o
+FLAGS=-D_WINDOWS
 
 $(ELFNAME): $(OBJ)
-	g++ -g -o $@ $^
+	g++ $(FLAGS) -g -o $@ $^
 	
 $(OBJ): %.o: %.cpp
-	g++ -g -c $<
+	g++ $(FLAGS) -g -c $<
 	
 .PHONY: clean
 clean:

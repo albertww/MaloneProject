@@ -6,7 +6,7 @@
 #include <memory.h>
 #include <errno.h>
 
-#define CACHE_SIZE 1000
+#define CACHE_SIZE 100000000
 
 int FileExist(const char *filename)
 {
@@ -34,6 +34,7 @@ int Rename(const char *oldname, const char *newname)
 }
 
 const char *CMaloneLog::s_LogStr[] = {"ERROR", "WARN", "DEBUG" };
+CMaloneLog *CMaloneLog::s_Logger = NULL;
 
 CMaloneLog::CMaloneLog(const char *moduleName)
 {
@@ -60,6 +61,16 @@ CMaloneLog::~CMaloneLog()
 {
 	Destroy();
 	//pthread_mutex_destroy(&m_LogMutex);
+}
+
+CMaloneLog * CMaloneLog::sharedLogger()
+{
+	if (s_Logger == NULL)
+	{
+		s_Logger = new CMaloneLog("shishicai");
+		
+	}
+	return s_Logger;
 }
 
 int CMaloneLog::LogMessage(int level, const char *file, int line, 

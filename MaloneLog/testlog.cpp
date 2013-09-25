@@ -1,16 +1,16 @@
 
 #include "MaloneLog.h"
-
-CMaloneLog logger("Main");
+#include <unistd.h>
 
 class base
 {
 public:
-	base() { MALONE_ERROR_LOG(logger, "this is base constructer"); }
+	//base() { MALONE_ERROR_LOG(logger, "this is base constructer"); }
 };
 
 int main()
 {
+	
 	base b;
 	
 	LOG_DEBUG("%s %i", "afdasfasdfdsafdsdsafdsafdsa", 1);
@@ -23,6 +23,6 @@ int main()
 	LOG_DEBUG_S("yohehe" << " sdfasdgaggggggggggeee " << 3000);
 	LOG_DEBUG_S("yohehe" << " sdfasdgaggggggggggeee " << 4000);
 	LOG_DEBUG_S("yohehe" << " sdfasdgaggggggggggeee " << 5000);
-
+	//Sleep(2000);
 	return 0;
 }

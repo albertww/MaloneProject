@@ -194,6 +194,7 @@ public:
 		return ret;
 	}
 	
+	// first find if the element is in the list only by check GetBoss()
 	PoolElement<T> *QuickRemoveElement(PoolElement<T> *element)
 	{
 		if (NULL == element || this != element->GetBoss())
@@ -220,6 +221,7 @@ public:
 		return element;
 	}
 	
+	// first find if the element is in the list by iterate the list, then remove it if true
 	PoolElement<T> *RemoveFromList(PoolElement<T> *element)
 	{
 		if (element == NULL)

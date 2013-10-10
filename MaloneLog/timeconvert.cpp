@@ -58,7 +58,7 @@ int MaloneTime::StringToTimestruct(char *time_string, struct tm* ptm)
   if (ret == 0 || ret == EOF)
     return 0;
   ptm->tm_year = year - 1900;
-  ptm->tm_mon = month;
+  ptm->tm_mon = month - 1;
   ptm->tm_mday = day;
   ptm->tm_hour = hour;
   ptm->tm_min = minute;
